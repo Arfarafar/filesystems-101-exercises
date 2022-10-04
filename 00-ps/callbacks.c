@@ -19,7 +19,7 @@ void report_process(pid_t pid, const char *exe, char **argv, char **envp)
 	printf("]\n");
 }
 
-void report_error(const char *path, int errno)
+void report_error(const char *path, int errno_code)
 {
-	fprintf(stderr, "failed to access '%s': %i (%s)\n", path, errno, strerror(errno));
+	fprintf(stderr, "failed to access '%s': %i (%s)\n", path, errno_code, strerror(errno_code));
 }
