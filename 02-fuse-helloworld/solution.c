@@ -107,7 +107,7 @@ static int fs_setxattr(const char *path, const char *name, const char *value, si
 }
 
 
-static int fs_rename(const char* oldpath, const char* newpath, unsigned int flags)
+static int fs_rename(const char *oldpath, const char *newpath, unsigned int flags)
 {
 	(void)newpath, (void)flags;
 
@@ -120,13 +120,13 @@ static int fs_rename(const char* oldpath, const char* newpath, unsigned int flag
 }
 
 
-static int fs_unlink(const char* path)
+static int fs_unlink(const char *path)
 {
 	(void)path;
 	return -EROFS;
 }
 
-static int fs_removexattr(const char* path, const char* name)
+static int fs_removexattr(const char *path, const char *name)
 {
 	(void)name;
 
@@ -136,6 +136,12 @@ static int fs_removexattr(const char* path, const char* name)
 	}
 
 	return -EINVAL;
+}
+
+static int fs_create(const char *path, mode_t mode, struct fuse_file_info *ffi)
+{
+	(void)path, (void)mode, (void)ffi;
+	return -EROFS;
 }
 
 
@@ -150,6 +156,7 @@ static const struct fuse_operations hellofs_ops = {
     .rename = fs_rename,
     .unlink = fs_unlink,
     .removexattr = fs_removexattr,
+    .create = fs_create,
 };
 
 int helloworld(const char *mntp)
