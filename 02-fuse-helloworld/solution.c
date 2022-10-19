@@ -120,6 +120,25 @@ static int fs_rename(const char* oldpath, const char* newpath, unsigned int flag
 }
 
 
+static int fs_unlink(const char* path)
+{
+	(void)path;
+	return -EROFS;
+}
+
+static int fs_removexattr(const char* path, const char* name)
+{
+	(void)name;
+
+	if (strcmp(path, "/hello") == 0)
+	{
+		return -EROFS;
+	}
+
+	return -EINVAL;
+}
+
+
 static const struct fuse_operations hellofs_ops = {
 	.readdir = fs_readdir,
 	.read = fs_read,
@@ -129,6 +148,8 @@ static const struct fuse_operations hellofs_ops = {
     .write = fs_write,
     .setxattr = fs_setxattr,
     .rename = fs_rename,
+    .unlink = fs_unlink,
+    .removexattr = fs_removexattr,
 };
 
 int helloworld(const char *mntp)
