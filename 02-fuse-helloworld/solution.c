@@ -94,6 +94,19 @@ static int fs_write(const char *path, const char *buf, size_t size, off_t off, s
 	return -EINVAL;
 }
 
+static int fs_setxattr(const char *path, const char *name, const void *value, size_t size, int flags)
+{
+	(void)name, (void)flags, (void)value, (void)size, (void)flags;
+
+	if (strcmp(path, "/hello") == 0)
+	{
+		return -EROFS;
+	}
+
+	return -EINVAL;
+}
+
+
 
 static const struct fuse_operations hellofs_ops = {
 	.readdir = fs_readdir,
