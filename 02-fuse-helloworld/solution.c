@@ -1,9 +1,100 @@
 #include <solution.h>
 
+#include <errno.h>
 #include <fuse.h>
+#include <string.h>
+#include <sys/types.h>
+
+
+static int fs_readdir(const char *path, void *data, fuse_fill_dir_t filler, off_t off, struct fuse_file_info *ffi)
+{
+	if (strcmp(path, "/") != 0)
+		return -ENOENT;
+
+	filler(data, ".", NULL, 0);
+	filler(data, "..", NULL, 0);
+	filler(data, "hello", NULL, 0);
+	return 0;
+}
+
+static int fs_read(const char *path, char *buf, size_t size, off_t off, struct fuse_file_info *ffi)
+{
+	size_t len;
+	const char file_contents[128] = "";
+
+    snprintf(file_contents, 128, "hello, %d\n", fuse_get_context() -> pid);
+    len = strlen(file_contents);
+	if (off < len) {
+		if (off + size > len)
+			size = len - off;
+		memcpy(buf, file_contents + off, size);
+	} else
+		size = 0;
+
+	return size;
+}
+
+static int fs_open(const char *path, struct fuse_file_info *ffi)
+{
+	if (strncmp(path, "/hello", 10) != 0)
+		return -ENOENT;
+
+	if ((ffi->flags & 3) != O_RDONLY)
+		return -EROFS;
+
+	return 0;
+}
+
+static void* fs_init(struct fuse_conn_info *conn, struct fuse_config *cfg)
+{
+	cfg->uid = getgid();
+	cfg->umask = ~0400;
+	cfg->gid = getuid();
+
+	cfg->set_mode = 1;
+    cfg->set_uid = 1;
+	cfg->set_gid = 1;
+    cfg->kernel_cache = 1;
+
+	return NULL;
+}
+
+static int fs_getattr(const char *path, struct stat *st, struct fuse_file_info *ffi)
+{
+    memset(st, 0, sizeof(struct stat));
+	if (strcmp(path, "/") == 0) {
+		st->st_mode = S_IFDIR | 0400;
+		st->st_nlink = 2;
+	} else if (strcmp(path, "/hello") == 0) {
+		st->st_mode = S_IFREG | 0400;
+		st->st_nlink = 1;
+		st->st_size = 10; // ""It is OK to report the size of "hello" that does not match the content.""
+
+	} else {
+		return -ENOENT;
+	}
+
+	return 0;
+}
+
+static int fs_write(const char *path, const char *buf, size_t size, off_t off, struct fuse_file_info * ffi)
+{
+    if (strcmp(path, "/hello") == 0)
+	{
+		return -EROFS;
+	}
+
+	return -EINVAL;
+}
+
 
 static const struct fuse_operations hellofs_ops = {
-	/* implement me */
+	.readdir = fs_readdir,
+	.read = fs_read,
+	.open = fs_open,
+    .init = fs_init,
+    .getattr = fs_getattr,
+    .write = fs_write,
 };
 
 int helloworld(const char *mntp)
