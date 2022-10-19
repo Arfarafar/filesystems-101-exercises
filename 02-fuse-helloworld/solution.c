@@ -4,28 +4,32 @@
 #include <fuse.h>
 #include <string.h>
 #include <sys/types.h>
+#include <stdio.h>
 
 
-static int fs_readdir(const char *path, void *data, fuse_fill_dir_t filler, off_t off, struct fuse_file_info *ffi)
+
+static int fs_readdir(const char *path, void *data, fuse_fill_dir_t filler, off_t off, struct fuse_file_info *ffi,  enum fuse_readdir_flags frf)
 {
+    (void)off, (void)ffi, (void)frf;
 	if (strcmp(path, "/") != 0)
 		return -ENOENT;
-
-	filler(data, ".", NULL, 0);
-	filler(data, "..", NULL, 0);
-	filler(data, "hello", NULL, 0);
+    
+	filler(data, ".", NULL, 0, 0);
+	filler(data, "..", NULL, 0, 0);
+	filler(data, "hello", NULL, 0, 0);
 	return 0;
 }
 
 static int fs_read(const char *path, char *buf, size_t size, off_t off, struct fuse_file_info *ffi)
 {
+    (void)path, (void) ffi;
 	size_t len;
-	const char file_contents[128] = "";
+	char file_contents[128] = "";
 
     snprintf(file_contents, 128, "hello, %d\n", fuse_get_context() -> pid);
     len = strlen(file_contents);
-	if (off < len) {
-		if (off + size > len)
+	if ((size_t)off < len) {
+		if ((size_t)off + size > len)
 			size = len - off;
 		memcpy(buf, file_contents + off, size);
 	} else
@@ -47,6 +51,7 @@ static int fs_open(const char *path, struct fuse_file_info *ffi)
 
 static void* fs_init(struct fuse_conn_info *conn, struct fuse_config *cfg)
 {
+    (void)conn;
 	cfg->uid = getgid();
 	cfg->umask = ~0400;
 	cfg->gid = getuid();
@@ -61,6 +66,7 @@ static void* fs_init(struct fuse_conn_info *conn, struct fuse_config *cfg)
 
 static int fs_getattr(const char *path, struct stat *st, struct fuse_file_info *ffi)
 {
+    (void)ffi;
     memset(st, 0, sizeof(struct stat));
 	if (strcmp(path, "/") == 0) {
 		st->st_mode = S_IFDIR | 0400;
@@ -79,6 +85,7 @@ static int fs_getattr(const char *path, struct stat *st, struct fuse_file_info *
 
 static int fs_write(const char *path, const char *buf, size_t size, off_t off, struct fuse_file_info * ffi)
 {
+    (void)buf, (void)size, (void)off, (void)ffi;
     if (strcmp(path, "/hello") == 0)
 	{
 		return -EROFS;
