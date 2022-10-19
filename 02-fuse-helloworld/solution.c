@@ -107,6 +107,18 @@ static int fs_setxattr(const char *path, const char *name, const char *value, si
 }
 
 
+static int fs_rename(const char* oldpath, const char* newpath, unsigned int flags)
+{
+	(void)newpath, (void)flags;
+
+	if (strcmp(oldpath, "/hello") == 0)
+	{
+		return -EROFS;
+	}
+
+	return -EINVAL;
+}
+
 
 static const struct fuse_operations hellofs_ops = {
 	.readdir = fs_readdir,
@@ -116,6 +128,7 @@ static const struct fuse_operations hellofs_ops = {
     .getattr = fs_getattr,
     .write = fs_write,
     .setxattr = fs_setxattr,
+    .rename = fs_rename,
 };
 
 int helloworld(const char *mntp)
