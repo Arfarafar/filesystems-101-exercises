@@ -117,7 +117,7 @@ int copy(int in, int out)
                     break;
             }
                 
-            struct io_user_data *user_data = io_uring_cqe_get_data(cqe);
+            struct user_data *user_data = io_uring_cqe_get_data(cqe);
 
             if (cqe->res < 0 || (cqe -> res) < (user_data -> bufsize)) {
                 free(user_data);
