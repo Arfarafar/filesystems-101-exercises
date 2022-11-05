@@ -7,24 +7,24 @@
 
 int block_transfer(int img, int out, long int block_size, long long int* remainfilesize, int upper_bound, uint32_t* blocks){
 
-	char* buf = (char*)malloc(block_size);
+	char buf[block_size];
 	for (int i = 0; i < upper_bound; i++) {
 		int size = *remainfilesize > block_size ? block_size : *remainfilesize;
 		if(pread(img, buf, size, block_size*blocks[i]) != size){
-			free(buf);
+			
 			return -errno;
 		}
 		if(write(out, buf, size) != size){
-			free(buf);
+			
 			return -errno;
 		}
 		*remainfilesize -= block_size;
 		if (*remainfilesize <= 0){
-			free(buf);
+			
 			return 0;
 		}
 	}
-	free(buf);
+	
 	return 1;
 }
 
