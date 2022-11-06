@@ -8,6 +8,7 @@
 int dir_reader(int img, long int block_size, int upper_bound, uint32_t* blocks){
 
 	char buf[block_size];
+	memset(buf, 0, blockSize);
 	struct ext2_dir_entry_2* dir_entry = (struct ext2_dir_entry_2*) buf;
 
 	for (int i = 0; i < upper_bound; i++) {
