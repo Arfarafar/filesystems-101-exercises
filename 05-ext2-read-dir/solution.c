@@ -33,7 +33,7 @@ int dir_reader(int img, long int block_size, int upper_bound, uint32_t* blocks){
 			report_file(dir_entry -> inode, type, filename);
 
 			remainsize -= dir_entry -> rec_len;
-			dir_entry = (struct ext2_dir_entry_2*) ((char*) dir_entry +  dir_entry -> rec_len);
+			dir_entry = (struct ext2_dir_entry_2*) ((char*) (dir_entry) +  dir_entry -> rec_len);
 		}
 		
 		
