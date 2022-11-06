@@ -33,7 +33,7 @@ int dump_file(int img, int inode_nr, int out)
 	if(pread(img, (char*)&super_block, sizeof(struct ext2_super_block), SUPERBLOCK_OFFSET) != sizeof(struct ext2_super_block))
 		return -errno;
 
-	long int block_size = 1024u << super_block.s_log_block_size;	
+	long int block_size = 1024 << super_block.s_log_block_size;	
 	
 	int addr_bg_descr = ((super_block.s_first_data_block+1)*block_size + sizeof(struct ext2_group_desc)*((inode_nr-1) / super_block.s_inodes_per_group));
 	struct ext2_group_desc group_desc = {};
