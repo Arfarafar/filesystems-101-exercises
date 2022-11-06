@@ -5,7 +5,7 @@
 
 
 
-int dir_reader(int img, int out, long int block_size, int upper_bound, uint32_t* blocks){
+int dir_reader(int img, long int block_size, int upper_bound, uint32_t* blocks){
 
 	char buf[block_size];
 	struct ext2_dir_entry_2* dir_entry = (struct ext2_dir_entry_2*) buf;
@@ -13,7 +13,7 @@ int dir_reader(int img, int out, long int block_size, int upper_bound, uint32_t*
 	for (int i = 0; i < upper_bound; i++) {
 		if(blocks[i] == 0)
 			return 0;
-		if(pread(img, buf, size, block_size*blocks[i]) != block_size){
+		if(pread(img, buf, block_size, block_size*blocks[i]) != block_size){
 			return -errno;
 		}
 
@@ -64,7 +64,7 @@ int dump_dir(int img, int inode_nr)
 	uint32_t* x2blocks = (uint32_t*)malloc(block_size);
 
 	
-	int res = dir_reader(img, out, block_size, EXT2_IND_BLOCK, inode.i_block);
+	int res = dir_reader(img, block_size, EXT2_IND_BLOCK, inode.i_block);
 	if(res <= 0)
 		goto out;
 //---------------------------------------------------------------------------------------------------------------------------------------	
@@ -73,7 +73,7 @@ int dump_dir(int img, int inode_nr)
 		res = -errno;
 			goto out;
 	}
-	res = dir_reader(img, out, block_size, block_size/4, x1blocks);
+	res = dir_reader(img, block_size, block_size/4, x1blocks);
 	if(res <= 0)
 		goto out;
 
@@ -91,7 +91,7 @@ int dump_dir(int img, int inode_nr)
 			goto out;
 		}
 			
-		res = dir_reader(img, out, block_size, block_size/4, x1blocks);
+		res = dir_reader(img, block_size, block_size/4, x1blocks);
 		if(res <= 0)
 			goto out;
 	}
