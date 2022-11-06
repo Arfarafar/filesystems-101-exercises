@@ -11,16 +11,13 @@ int block_transfer(int img, int out, long int block_size, long long int* remainf
 	for (int i = 0; i < upper_bound; i++) {
 		int size = *remainfilesize > block_size ? block_size : *remainfilesize;
 		if(pread(img, buf, size, block_size*blocks[i]) != size){
-			
 			return -errno;
 		}
 		if(write(out, buf, size) != size){
-			
 			return -errno;
 		}
 		*remainfilesize -= block_size;
 		if (*remainfilesize <= 0){
-			
 			return 0;
 		}
 	}
@@ -38,13 +35,13 @@ int dump_file(int img, int inode_nr, int out)
 
 	long int block_size = 1024 << super_block.s_log_block_size;	
 	
-	int addr_ino_table = ((super_block.s_first_data_block+1)*block_size + sizeof(struct ext2_group_desc)*((inode_nr-1) / super_block.s_inodes_per_group) + 8);
-	uint32_t ino_table;
-	if(pread(img, (char*)&ino_table, 4, addr_ino_table) != 4)
+	int addr_bg_descr = ((super_block.s_first_data_block+1)*block_size + sizeof(struct ext2_group_desc)*((inode_nr-1) / super_block.s_inodes_per_group));
+	struct ext2_group_desc group_desc = {};
+	if(pread(img, (char*)&group_desc, sizeof(struct ext2_group_desc), addr_bg_descr) != sizeof(struct ext2_group_desc))
 		return -errno;
 
 	struct ext2_inode inode = {};
-	if(pread(img, (char*)&inode, sizeof(struct ext2_inode), ino_table*block_size + ((inode_nr-1) % super_block.s_inodes_per_group)*sizeof(struct ext2_inode)) != sizeof(struct ext2_inode))
+	if(pread(img, (char*)&inode, sizeof(struct ext2_inode), group_desc.bg_inode_table*block_size + ((inode_nr-1) % super_block.s_inodes_per_group)*sizeof(struct ext2_inode)) != sizeof(struct ext2_inode))
 		return -errno;
 //----------------------------------------------------------------------------------------------------------------------------------------------------------------
 	long long remainfilesize = ((long long)inode.i_size_high << 32L) + (long long)inode.i_size;
