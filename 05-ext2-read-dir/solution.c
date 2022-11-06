@@ -1,6 +1,6 @@
 #include <solution.h>
 #include <ext2fs/ext2fs.h>
-       #include <unistd.h>
+#include <unistd.h>
 #include <errno.h>
 
 
@@ -25,7 +25,7 @@ int dir_reader(int img, long int block_size, int upper_bound, uint32_t* blocks){
 			else if(dir_entry -> file_type == EXT2_FT_DIR)
 				type = 'd';
 
-			char filename[EXT2_NAME_LEN + 1] = {};
+			char filename[EXT2_NAME_LEN + 1];
 			memcpy(filename, dir_entry -> name, dir_entry -> name_len);
 			filename[dir_entry -> name_len] = '\0';
 
@@ -69,6 +69,9 @@ int dump_dir(int img, int inode_nr)
 		return res;
 //---------------------------------------------------------------------------------------------------------------------------------------	
 
+	if(inode.i_block[EXT2_IND_BLOCK] == 0){
+		return 0;
+	}
 	if(pread(img, (char*)x1blocks, block_size, block_size * inode.i_block[EXT2_IND_BLOCK]) != block_size){
 		return -errno;
 		
@@ -79,6 +82,9 @@ int dump_dir(int img, int inode_nr)
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
+	if(inode.i_block[EXT2_IND_BLOCK + 1] == 0){
+		return 0;
+	}
 	if(pread(img, (char*)x2blocks, block_size, block_size * inode.i_block[EXT2_IND_BLOCK+1]) != block_size){
 		return -errno;
 			
