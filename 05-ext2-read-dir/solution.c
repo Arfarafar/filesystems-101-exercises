@@ -19,7 +19,7 @@ int dir_reader(int img, long int block_size, int upper_bound, uint32_t* blocks){
 
 		int remainsize = block_size;
 		char type = 0;
-		while (remainsize){
+		while (remainsize > 0){
 			if(dir_entry -> file_type == EXT2_FT_REG_FILE)
 				type = 'f';
 			else if(dir_entry -> file_type == EXT2_FT_DIR)
