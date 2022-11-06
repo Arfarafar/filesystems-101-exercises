@@ -41,7 +41,7 @@ int dump_file(int img, int inode_nr, int out)
 		return -errno;
 
 	struct ext2_inode inode = {};
-	if(pread(img, (char*)&inode, sizeof(struct ext2_inode), group_desc.bg_inode_table*block_size + ((inode_nr-1) % sizeof(struct ext2_inode))*super_block.s_inode_size) != sizeof(struct ext2_inode))
+	if(pread(img, (char*)&inode, sizeof(struct ext2_inode), group_desc.bg_inode_table*block_size + ((inode_nr-1) % super_block.s_inodes_per_group)*sizeof(struct ext2_inode)) != sizeof(struct ext2_inode))
 		return -errno;
 //----------------------------------------------------------------------------------------------------------------------------------------------------------------
 	long long remainfilesize = ((long long)inode.i_size_high << 32L) + (long long)inode.i_size;
