@@ -7,7 +7,7 @@
 
 int dir_reader(int img, long int block_size, int upper_bound, uint32_t* blocks){
 
-	char buf[block_size];
+	char buf[block_size] = {};
 	struct ext2_dir_entry_2* dir_entry = (struct ext2_dir_entry_2*) buf;
 
 	for (int i = 0; i < upper_bound; i++) {
@@ -25,7 +25,7 @@ int dir_reader(int img, long int block_size, int upper_bound, uint32_t* blocks){
 			else if(dir_entry -> file_type == EXT2_FT_DIR)
 				type = 'd';
 
-			char filename[EXT2_NAME_LEN + 1];
+			char filename[EXT2_NAME_LEN + 1] = {};
 			memcpy(filename, dir_entry -> name, dir_entry -> name_len);
 			filename[dir_entry -> name_len] = '\0';
 
