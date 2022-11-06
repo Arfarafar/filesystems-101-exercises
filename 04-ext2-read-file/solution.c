@@ -33,7 +33,7 @@ int dump_file(int img, int inode_nr, int out)
 	if(pread(img, (char*)&super_block, sizeof(struct ext2_super_block), SUPERBLOCK_OFFSET) != sizeof(struct ext2_super_block))
 		return -errno;
 
-	long int block_size = 1024 << super_block.s_log_block_size;	
+	long int block_size = 1024u << super_block.s_log_block_size;	
 	
 	int addr_bg_descr = ((super_block.s_first_data_block+1)*block_size + sizeof(struct ext2_group_desc)*((inode_nr-1) / super_block.s_inodes_per_group));
 	struct ext2_group_desc group_desc = {};
@@ -41,10 +41,12 @@ int dump_file(int img, int inode_nr, int out)
 		return -errno;
 
 	struct ext2_inode inode = {};
-	if(pread(img, (char*)&inode, sizeof(struct ext2_inode), group_desc.bg_inode_table*block_size + ((inode_nr-1) % super_block.s_inodes_per_group)*sizeof(struct ext2_inode)) != sizeof(struct ext2_inode))
+	if(pread(img, (char*)&inode, sizeof(struct ext2_inode), group_desc.bg_inode_table*block_size + ((inode_nr-1) % super_block.s_inodes_per_group)*super_block.s_inode_size) != sizeof(struct ext2_inode))
 		return -errno;
 //----------------------------------------------------------------------------------------------------------------------------------------------------------------
 	long long remainfilesize = ((long long)inode.i_size_high << 32L) + (long long)inode.i_size;
+	//printf("%Ld\n", remainfilesize);
+	//printf("%ld %d\n", sizeof(struct ext2_inode), super_block.s_inode_size);
 	uint32_t* x1blocks = (uint32_t*)malloc(block_size);
 	uint32_t* x2blocks = (uint32_t*)malloc(block_size);
 
