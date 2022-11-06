@@ -7,7 +7,7 @@
 
 int dir_reader(int img, long int block_size, int upper_bound, uint32_t* blocks){
 
-	char buf[block_size] = {};
+	char buf[block_size];
 	struct ext2_dir_entry_2* dir_entry = (struct ext2_dir_entry_2*) buf;
 
 	for (int i = 0; i < upper_bound; i++) {
@@ -60,43 +60,42 @@ int dump_dir(int img, int inode_nr)
 	if(pread(img, (char*)&inode, sizeof(struct ext2_inode), group_desc.bg_inode_table*block_size + ((inode_nr-1) % super_block.s_inodes_per_group)*super_block.s_inode_size) != sizeof(struct ext2_inode))
 		return -errno;
 //----------------------------------------------------------------------------------------------------------------------------------------------------------------
-	uint32_t* x1blocks = (uint32_t*)malloc(block_size);
-	uint32_t* x2blocks = (uint32_t*)malloc(block_size);
+	uint32_t x1blocks[block_size/4];
+	uint32_t x2blocks[block_size/4];
 
 	
 	int res = dir_reader(img, block_size, EXT2_IND_BLOCK, inode.i_block);
 	if(res <= 0)
-		goto out;
+		return res;
 //---------------------------------------------------------------------------------------------------------------------------------------	
 
 	if(pread(img, (char*)x1blocks, block_size, block_size * inode.i_block[EXT2_IND_BLOCK]) != block_size){
-		res = -errno;
-			goto out;
+		return -errno;
+		
 	}
 	res = dir_reader(img, block_size, block_size/4, x1blocks);
 	if(res <= 0)
-		goto out;
+		return res;
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
 	if(pread(img, (char*)x2blocks, block_size, block_size * inode.i_block[EXT2_IND_BLOCK+1]) != block_size){
-		res = -errno;
-			goto out;
+		return -errno;
+			
 	}
 
 	for (int j = 0; j < block_size/4; ++j)
 	{
 		if(pread(img, (char*)x1blocks, block_size, block_size * x2blocks[j]) != block_size){
-			res = -errno;
-			goto out;
+			return-errno;
+			
 		}
 			
 		res = dir_reader(img, block_size, block_size/4, x1blocks);
 		if(res <= 0)
-			goto out;
+			return res;
 	}
 
-out: free(x1blocks);
-	 free(x2blocks);
-	 return res;
+
+	 return 0;
 }
