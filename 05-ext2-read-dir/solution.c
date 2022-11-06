@@ -8,14 +8,17 @@
 int dir_reader(int img, long int block_size, int upper_bound, uint32_t* blocks){
 
 	char buf[block_size];
-	struct ext2_dir_entry_2* dir_entry = (struct ext2_dir_entry_2*) buf;
+	memset(buf, 0, block_size);
+	
 
 	for (int i = 0; i < upper_bound; i++) {
 		if(blocks[i] == 0)
 			return 0;
+		memset(buf, 0, block_size);
 		if(pread(img, buf, block_size, block_size*blocks[i]) != block_size){
 			return -errno;
 		}
+		struct ext2_dir_entry_2* dir_entry = (struct ext2_dir_entry_2*) buf;
 
 		int remainsize = block_size;
 		
