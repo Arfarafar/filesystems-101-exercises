@@ -2,6 +2,8 @@
 #include <ext2fs/ext2fs.h>
        #include <unistd.h>
 #include <errno.h>
+#include <sys/types.h>
+       #include <sys/stat.h>
 
 
 
@@ -33,7 +35,7 @@ int dump_file(int img, const char *path, int out)
 {
 
 	struct stat statbuf = {};
-	if(stat(path, &statbuf) < 0);
+	if(stat(path, &statbuf) < 0)
 		return -errno;
 	int inode_nr = statbuf.st_ino;
 
