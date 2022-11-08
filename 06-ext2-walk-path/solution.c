@@ -92,6 +92,7 @@ int Find_ino(int img, struct ext2_super_block* super_block, long int block_size,
 	char* ch = strchr(path, '/');
 	char entry_type = ch != NULL ? EXT2_FT_DIR : EXT2_FT_REG_FILE;
 	int entry_len = ch != NULL ? ch - path + 1 : (int)strlen(path);
+	//printf("%d\n", entry_len);
 	
 	int res = dir_reader(img, block_size, EXT2_IND_BLOCK, inode.i_block, path, entry_type);
 	if(res <= 0)
@@ -184,7 +185,7 @@ int copy_file(int img, int out, struct ext2_super_block* super_block, long int b
 			return res;
 	}
 
-	return -E2BIG;
+	return -EFBIG;
 }
 
 
@@ -195,6 +196,9 @@ int copy_file(int img, int out, struct ext2_super_block* super_block, long int b
 int dump_file(int img, const char *path, int out)
 {
 
+	if(*path != '/')
+		return -EFAULT;
+
 	struct ext2_super_block super_block = {};
 	if(pread(img, (char*)&super_block, sizeof(struct ext2_super_block), SUPERBLOCK_OFFSET) != sizeof(struct ext2_super_block))
 		return -errno;
@@ -203,7 +207,8 @@ int dump_file(int img, const char *path, int out)
 	
 	int inode_nr = EXT2_ROOT_INO;
 
-	inode_nr = Find_ino(img, &super_block, block_size, inode_nr, path);
+	inode_nr = Find_ino(img, &super_block, block_size, inode_nr, path+1);
+	//printf("%d\n", inode_nr);
 	if (inode_nr < 0)
 		return inode_nr;
 
