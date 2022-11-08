@@ -25,7 +25,7 @@ int dir_reader(int img, long int block_size, int upper_bound, uint32_t* blocks, 
 		while (remainsize > 0){
 			remainsize -= dir_entry -> rec_len;
 			if(!strncmp(dir_entry -> name, left_path, dir_entry -> name_len)){
-				if(dir_entry -> file_type != entry_type)
+				if(dir_entry -> file_type != entry_type && entry_type == EXT2_FT_DIR)
 					return -ENOTDIR;
 				return dir_entry -> inode;
 			}
