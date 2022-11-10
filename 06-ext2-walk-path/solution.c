@@ -24,7 +24,7 @@ int dir_reader(int img, long int block_size, int upper_bound, uint32_t* blocks, 
 		
 		while (remainsize > 0){
 			remainsize -= dir_entry -> rec_len;
-			if(!strncmp(dir_entry -> name, left_path, dir_entry -> name_len) ){//&& dir_entry -> name_len == entry_len){
+			if(!strncmp(dir_entry -> name, left_path, dir_entry -> name_len) && (dir_entry -> name_len == entry_len)){
 				if(dir_entry -> file_type != entry_type){
 				//if(dir_entry -> file_type == EXT2_FT_REG_FILE && entry_type == EXT2_FT_DIR){
 					//printf("%s\n", left_path);
@@ -78,6 +78,7 @@ long int inode_offset(int img, struct ext2_super_block* super_block, long int bl
 
 int Find_ino(int img, struct ext2_super_block* super_block, long int block_size, int inode_nr, const char* path){
 
+	path = path + 1;
 	if (strlen(path) == 0){
 		return -ENOENT;
 	}
@@ -94,7 +95,7 @@ int Find_ino(int img, struct ext2_super_block* super_block, long int block_size,
 
 	char* ch = strchr(path, '/');
 	char entry_type = ch != NULL ? EXT2_FT_DIR : EXT2_FT_REG_FILE;
-	int entry_len = ch != NULL ? ch - path + 1 : (int)strlen(path);
+	int entry_len = ch != NULL ? ch - path : (int)strlen(path);
 	//printf("%d\n", entry_len);
 	
 	int res = dir_reader(img, block_size, EXT2_IND_BLOCK, inode.i_block, path, entry_type, entry_len);
@@ -210,7 +211,7 @@ int dump_file(int img, const char *path, int out)
 	
 	int inode_nr = EXT2_ROOT_INO;
 
-	inode_nr = Find_ino(img, &super_block, block_size, inode_nr, path+1);
+	inode_nr = Find_ino(img, &super_block, block_size, inode_nr, path);
 	//printf("%d\n", inode_nr);
 	if (inode_nr < 0)
 		return inode_nr;
