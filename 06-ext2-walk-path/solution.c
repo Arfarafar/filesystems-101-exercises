@@ -10,7 +10,7 @@
 int dir_reader(int img, long int block_size, int upper_bound, uint32_t* blocks, const char* left_path, char entry_type, int entry_len){
 
 	char buf[block_size];
-
+	(void)entry_len;
 	for (int i = 0; i < upper_bound; i++) {
 		if(blocks[i] == 0)
 			return -ENOENT;
