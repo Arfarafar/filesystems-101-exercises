@@ -8,6 +8,8 @@
 #include <stdlib.h>
 #include <ntfs-3g/volume.h>
 #include <ntfs-3g/dir.h>
+#include <string.h>
+
 
 #define FILEPATHLEN 256
 #define PAGE 4096
