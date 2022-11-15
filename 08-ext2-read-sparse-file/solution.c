@@ -1,4 +1,10 @@
 #include <solution.h>
+#include <ext2fs/ext2fs.h>
+       #include <unistd.h>
+       #include <string.h>
+#include <errno.h>
+#include <sys/types.h>
+       #include <sys/stat.h>
 
 
 int block_transfer(int img, int out, long int block_size, long long int* remainfilesize, int upper_bound, uint32_t* blocks){
@@ -7,10 +13,12 @@ int block_transfer(int img, int out, long int block_size, long long int* remainf
 	for (int i = 0; i < upper_bound; i++) {
 		int size = *remainfilesize > block_size ? block_size : *remainfilesize;
 
-		if (block[i])
+		if (blocks[i] != 0)
+		{
 			if(pread(img, buf, size, block_size*blocks[i]) != size){
 				return -errno;
 			}
+		}
 		else
 			memset(buf, 0, size);
 
