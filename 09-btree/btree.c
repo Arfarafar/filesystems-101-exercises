@@ -40,8 +40,10 @@ struct btree* btree_alloc(unsigned int L)
 
 void bnode_free(struct bnode* b){
 	free(b -> key);
-	if(b -> leaf)
+	if(b -> leaf){
+		free(b);
 		return;
+	}
 
 	int i = 0;
 	for (; i < b -> key_number; ++i)
