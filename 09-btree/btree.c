@@ -39,6 +39,8 @@ struct btree* btree_alloc(unsigned int L)
 
 
 void bnode_free(struct bnode* b){
+	if(b == NULL)
+		return;
 	free(b -> key);
 	if(b -> leaf){
 		free(b);
@@ -297,12 +299,13 @@ void btree_delete(struct btree *t, int x)
 
     if (t -> root -> key_number == 0)
     {
+    	struct bnode* tmp = t -> root;
         if (t -> root -> leaf)
             t->root = NULL;
         else
             t->root = t->root->child[0];
  
-        bnode_free(t->root);
+        bnode_free(tmp);
     }
 }
 
