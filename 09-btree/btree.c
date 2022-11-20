@@ -31,8 +31,8 @@ struct bnode* bnode_alloc(unsigned int L, char is_leaf){
 
 struct btree* btree_alloc(unsigned int L)
 {
-	if (L == 1)
-		L = 2;
+	if (L < 3)
+		L = 3;
 	struct btree* Broot = (struct btree*)calloc(sizeof(struct btree), 1);
 	Broot -> root = bnode_alloc(L, 1);
 	Broot -> L = L;
@@ -177,7 +177,7 @@ void bnode_merge(struct bnode* b, int index)
 
 void bnode_fill(struct bnode* b, int index)
 {
-    if (index != 0 && b->child[index-1]->key_number >= (int)(b->Max_keys + 1) / 2){
+    if (index != 0 && b->child[index-1]->key_number >= (int)((b->Max_keys + 1) / 2)){
 
 	    struct bnode* child = b -> child[index];
 	    struct bnode* neighboor = b -> child[index-1];
@@ -197,7 +197,7 @@ void bnode_fill(struct bnode* b, int index)
 	    b -> key[index-1] = neighboor->key[neighboor -> key_number-1];
 	    neighboor -> key_number--;	
     }
-    else if (index != b -> key_number && b -> child[index+1]-> key_number >= (int)(b->Max_keys + 1) / 2){
+    else if (index != b -> key_number && b -> child[index+1]-> key_number >= (int)((b->Max_keys + 1) / 2)){
         struct bnode* child = b -> child[index];
 	    struct bnode* neighboor = b -> child[index+1];
 
@@ -235,7 +235,7 @@ int bnode_prevkey(struct bnode* b, int index)
  
 int bnode_nextkey(struct bnode* b, int index)
 {
-    struct bnode* current= b->child[index];
+    struct bnode* current= b->child[index + 1];
     while (!current->leaf){
         current = current->child[0];
     }
@@ -318,25 +318,26 @@ void btree_delete(struct btree *t, int x)
 bool bnode_search(struct bnode* b, int x){
 	
 	if(b == NULL){
-		return false;
+		return 0;
 	}
 
     int i = 0;
     for(; i < b -> key_number && x > b->key[i]; i++)
         ;
   
-    if(i == b->key_number){
+    if(i < b->key_number){
+    	if (b -> key[i] == x){
+    		return true;
+    	}
+
     	if(b->leaf)
     		return false;
 
     	return bnode_search(b->child[i], x);
     }
 
-    if (b -> key[i] == x)
-        return true;
-
     if (b -> leaf)
-        return false;
+        return false;    
 
     return bnode_search(b->child[i], x);
 }
