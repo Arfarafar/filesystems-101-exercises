@@ -295,6 +295,9 @@ void btree_delete(struct btree *t, int x)
 {
 	if (t -> root == NULL)
     	return;
+
+    if(!btree_contains(t, x))
+    	return;
  
     bnode_delete(t -> root, x);
 
