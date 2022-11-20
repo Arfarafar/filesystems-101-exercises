@@ -31,6 +31,8 @@ struct bnode* bnode_alloc(unsigned int L, char is_leaf){
 
 struct btree* btree_alloc(unsigned int L)
 {
+	if (L == 1)
+		L = 2;
 	struct btree* Broot = (struct btree*)calloc(sizeof(struct btree), 1);
 	Broot -> root = bnode_alloc(L, 1);
 	Broot -> L = L;
@@ -311,6 +313,10 @@ void btree_delete(struct btree *t, int x)
 
 bool bnode_search(struct bnode* b, int x){
 	
+	if(b == NULL){
+		return false;
+	}
+
     int i = 0;
     while (i < b -> key_number && x > b->key[i])
         i++;
@@ -332,6 +338,8 @@ bool bnode_search(struct bnode* b, int x){
 
 bool btree_contains(struct btree *t, int x)
 {
+	if(t == NULL)
+		return false;
 	return bnode_search(t->root, x);
 }
 
