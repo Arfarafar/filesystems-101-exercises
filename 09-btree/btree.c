@@ -160,14 +160,13 @@ void bnode_merge(struct bnode* b, int index)
         for(int i = 0 ; i <= neighboor -> key_number; ++i)
             child -> child[i+L] = neighboor -> child[i];
     }
-
-    for (int i = index + 1; i < b -> key_number; ++i)
-        b -> key[i-1] = b -> key[i];
- 
-    for (int i = index + 2; i <= b -> key_number; ++i)
-        b -> child[i-1] = b -> child[i];
-    
     child-> key_number += neighboor-> key_number + 1;
+
+    for (int i = index + 1; i < b -> key_number; ++i){
+        b -> key[i-1] = b -> key[i];
+        b -> child[i] = b -> child[i+1];
+    }
+
     b -> key_number--;
  
     free(neighboor -> key);
@@ -320,8 +319,8 @@ bool bnode_search(struct bnode* b, int x){
 	}
 
     int i = 0;
-    while (i < b -> key_number && x > b->key[i])
-        i++;
+    for(; i < b -> key_number && x > b->key[i]; i++)
+        ;
   
     if(i == b->key_number){
     	if(b->leaf)
@@ -335,6 +334,7 @@ bool bnode_search(struct bnode* b, int x){
 
     if (b -> leaf)
         return false;
+
     return bnode_search(b->child[i], x);
 }
 
