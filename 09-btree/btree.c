@@ -307,7 +307,9 @@ void btree_delete(struct btree *t, int x)
         else
             t->root = t->root->child[0];
  
-        bnode_free(tmp);
+        free(tmp -> key);
+        free(tmp -> child);
+        free(tmp);
     }
 }
 
