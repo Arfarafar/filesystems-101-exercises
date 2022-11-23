@@ -396,9 +396,6 @@ static const struct fuse_operations ext2_ops = {
 int ext2fuse(int img, const char *mntp)
 {
 	ext2img = img;
-	if (img == 0){
-		return 1;
-	}
 
 	char *argv[] = {"exercise", "-f", (char *)mntp, NULL};
 	return fuse_main(3, argv, &ext2_ops, NULL);
