@@ -134,6 +134,7 @@ static int Find_ino(struct ext2_super_block* super_block, long int block_size, i
 
 static int dirdatafill(long int block_size, int upper_bound, uint32_t* blocks, fuse_fill_dir_t filler, void *data){
 	char buf[block_size];
+	
 	for (int i = 0; i < upper_bound; i++) {
 		if(blocks[i] == 0)
 			return 0;
@@ -147,9 +148,18 @@ static int dirdatafill(long int block_size, int upper_bound, uint32_t* blocks, f
 		
 		while (remainsize > 0){
 			char filename[EXT2_NAME_LEN + 1];
+			struct stat stbuf = {};
 			memcpy(filename, dir_entry -> name, dir_entry -> name_len);
 			filename[dir_entry -> name_len] = '\0';
-			filler(data, filename, NULL, 0, 0);
+
+			char type = dir_entry -> file_type;
+			if(type == EXT2_FT_REG_FILE)
+				stbuf.st_mode = S_IFREG | S_IRUSR | S_IRGRP | S_IROTH;
+			else if(type == EXT2_FT_DIR)
+				stbuf.st_mode = S_IFDIR | S_IRUSR | S_IRGRP | S_IROTH;
+			
+			stbuf.st_ino = dir_entry -> inode;
+			filler(data, filename, &stbuf, 0, 0);
 			remainsize -= dir_entry -> rec_len;
 			dir_entry = (struct ext2_dir_entry_2*) ((char*) (dir_entry) +  dir_entry -> rec_len);
 		}	
