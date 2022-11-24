@@ -158,7 +158,7 @@ static int dirdatafill(long int block_size, int upper_bound, uint32_t* blocks, f
 			else if(type == EXT2_FT_DIR)
 				stbuf.st_mode = S_IFDIR | S_IRUSR | S_IRGRP | S_IROTH;
 			
-			stbuf.st_ino = dir_entry -> inode;
+			stbuf.st_ino = 0;// dir_entry -> inode;
 			filler(data, filename, &stbuf, 0, 0);
 			remainsize -= dir_entry -> rec_len;
 			dir_entry = (struct ext2_dir_entry_2*) ((char*) (dir_entry) +  dir_entry -> rec_len);
