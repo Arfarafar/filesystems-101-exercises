@@ -236,9 +236,9 @@ static int readfile(struct ext2_super_block* super_block, long int block_size, i
 			}
 		}
 		else if (startblocknumber < EXT2_IND_BLOCK + block_size/4){
-			startblocknumber -= EXT2_IND_BLOCK;
+			
 			int mempage = 0;
-			if (pread(ext2img, (char*) &mempage, 4, block_size*inode.i_block[EXT2_IND_BLOCK] + startblocknumber*4) != 4)
+			if (pread(ext2img, (char*) &mempage, 4, block_size*inode.i_block[EXT2_IND_BLOCK] + (startblocknumber - EXT2_IND_BLOCK)*4) != 4)
 				return -errno;
 			
 			if(pread(ext2img, buf, readportion, block_size*mempage) != (int)readportion){
@@ -246,14 +246,14 @@ static int readfile(struct ext2_super_block* super_block, long int block_size, i
 			}
 		}
 		else {
-			startblocknumber -= EXT2_IND_BLOCK + block_size/4;
-			int ind = startblocknumber / (block_size/4);
+			int relativeblock = startblocknumber - (EXT2_IND_BLOCK + block_size/4);
+			int ind = relativeblock / (block_size/4);
 			int mempagefirst = 0;
 			if (pread(ext2img, (char*) &mempagefirst, 4, block_size*inode.i_block[EXT2_IND_BLOCK+1] + ind*4) != 4)
 				return -errno;
-			startblocknumber = startblocknumber % (block_size/4);
+			relativeblock = relativeblock % (block_size/4);
 			int mempage = 0;
-			if (pread(ext2img, (char*) &mempage, 4, block_size*mempagefirst + startblocknumber*4) != 4)
+			if (pread(ext2img, (char*) &mempage, 4, block_size*mempagefirst + relativeblock*4) != 4)
 				return -errno;
 			
 			if(pread(ext2img, buf, readportion, block_size*mempage) != (int)readportion){
