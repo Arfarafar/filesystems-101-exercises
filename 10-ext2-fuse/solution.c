@@ -147,6 +147,11 @@ static int dirdatafill(long int block_size, int upper_bound, uint32_t* blocks, f
 		int remainsize = block_size;
 		
 		while (remainsize > 0){
+			if(dir_entry -> inode == 0){
+				remainsize -= dir_entry -> rec_len;
+				dir_entry = (struct ext2_dir_entry_2*) ((char*) (dir_entry) +  dir_entry -> rec_len);
+				continue;
+			}
 			char filename[EXT2_NAME_LEN + 1];
 			struct stat stbuf = {};
 			memcpy(filename, dir_entry -> name, dir_entry -> name_len);
@@ -159,8 +164,7 @@ static int dirdatafill(long int block_size, int upper_bound, uint32_t* blocks, f
 				stbuf.st_mode = S_IFDIR | S_IRUSR | S_IRGRP | S_IROTH;
 			
 			stbuf.st_ino = dir_entry -> inode;
-			(void)stbuf;
-			filler(data, filename, NULL, 0, 0);
+			filler(data, filename, &stbuf, 0, 0);
 			remainsize -= dir_entry -> rec_len;
 			dir_entry = (struct ext2_dir_entry_2*) ((char*) (dir_entry) +  dir_entry -> rec_len);
 		}	
@@ -195,7 +199,8 @@ static int fs_readdir(const char *path, void *data, fuse_fill_dir_t filler, off_
 	int inode_nr = Find_ino(&super_block, block_size, EXT2_ROOT_INO, path, 1);
 	if (inode_nr < 0)
 		return inode_nr;
-    
+
+
 	return readdir(&super_block, block_size, inode_nr, data, filler);
 }
 
@@ -210,47 +215,54 @@ static int readfile(struct ext2_super_block* super_block, long int block_size, i
 		return -errno;
 
 	long long remainfilesize = ((long long)inode.i_size_high << 32L) + (long long)inode.i_size;
+	//printf("remainfilesize %Ld off %ld\n", remainfilesize, off);
 	if(off >= remainfilesize)
 		return 0;
 	
 	if (remainfilesize - off < (int)size)
 		size = remainfilesize - off;
 	
-
+	unsigned int lefttoread = size;
 	unsigned int startblocknumber = off / block_size;
 	unsigned int offinsideblock = off % block_size;
-	size = (int)size > block_size - offinsideblock ? (unsigned)(block_size - offinsideblock) : size;
+	
 
-	if (startblocknumber < EXT2_IND_BLOCK){
-		
-		if(pread(ext2img, buf, size, block_size*inode.i_block[startblocknumber]) != (int)size){
-			return -errno;
+	while(lefttoread > 0){
+		unsigned int readportion = lefttoread > (unsigned) (block_size - offinsideblock) ? (unsigned)(block_size - offinsideblock) : lefttoread;
+		if (startblocknumber < EXT2_IND_BLOCK){
+			
+			if(pread(ext2img, buf, readportion, block_size*inode.i_block[startblocknumber]) != (int)readportion){
+				return -errno;
+			}
 		}
-	}
-	else if (startblocknumber < EXT2_IND_BLOCK + block_size/4){
-		startblocknumber -= EXT2_IND_BLOCK;
-		int mempage = 0;
-		if (pread(ext2img, (char*) &mempage, 4, block_size*inode.i_block[EXT2_IND_BLOCK] + startblocknumber*4) != 4)
-			return -errno;
-		
-		if(pread(ext2img, buf, size, block_size*mempage) != (int)size){
-			return -errno;
+		else if (startblocknumber < EXT2_IND_BLOCK + block_size/4){
+			startblocknumber -= EXT2_IND_BLOCK;
+			int mempage = 0;
+			if (pread(ext2img, (char*) &mempage, 4, block_size*inode.i_block[EXT2_IND_BLOCK] + startblocknumber*4) != 4)
+				return -errno;
+			
+			if(pread(ext2img, buf, readportion, block_size*mempage) != (int)readportion){
+				return -errno;
+			}
 		}
-	}
-	else {
-		startblocknumber -= EXT2_IND_BLOCK + block_size/4;
-		int ind = startblocknumber / (block_size/4);
-		int mempagefirst = 0;
-		if (pread(ext2img, (char*) &mempagefirst, 4, block_size*inode.i_block[EXT2_IND_BLOCK+1] + ind*4) != 4)
-			return -errno;
-		startblocknumber = startblocknumber % (block_size/4);
-		int mempage = 0;
-		if (pread(ext2img, (char*) &mempage, 4, block_size*mempagefirst + startblocknumber*4) != 4)
-			return -errno;
-		
-		if(pread(ext2img, buf, size, block_size*mempage) != (int)size){
-			return -errno;
+		else {
+			startblocknumber -= EXT2_IND_BLOCK + block_size/4;
+			int ind = startblocknumber / (block_size/4);
+			int mempagefirst = 0;
+			if (pread(ext2img, (char*) &mempagefirst, 4, block_size*inode.i_block[EXT2_IND_BLOCK+1] + ind*4) != 4)
+				return -errno;
+			startblocknumber = startblocknumber % (block_size/4);
+			int mempage = 0;
+			if (pread(ext2img, (char*) &mempage, 4, block_size*mempagefirst + startblocknumber*4) != 4)
+				return -errno;
+			
+			if(pread(ext2img, buf, readportion, block_size*mempage) != (int)readportion){
+				return -errno;
+			}
 		}
+		lefttoread -= readportion;
+		startblocknumber++;
+		offinsideblock = 0;
 	}
 
 	return size;
@@ -273,6 +285,11 @@ static int fs_read(const char *path, char *buf, size_t size, off_t off, struct f
 		return inode_nr;
 
 	return readfile(&super_block, block_size, inode_nr, buf, size, off);
+}
+
+static off_t fs_lseek (const char *path, off_t off, int whence, struct fuse_file_info *ffi){
+	(void)path, (void)whence, (void)ffi;
+	return off;
 }
 
 static int fs_open(const char *path, struct fuse_file_info *ffi)
@@ -402,6 +419,7 @@ static const struct fuse_operations ext2_ops = {
     .unlink = fs_unlink,
     .removexattr = fs_removexattr,
     .create = fs_create,
+    .lseek = fs_lseek,
 };
 
 int ext2fuse(int img, const char *mntp)
