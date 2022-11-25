@@ -228,6 +228,7 @@ static int readfile(struct ext2_super_block* super_block, long int block_size, i
 	
 
 	while(lefttoread > 0){
+
 		unsigned int readportion = lefttoread > (unsigned) (block_size - offinsideblock) ? (unsigned)(block_size - offinsideblock) : lefttoread;
 		if (startblocknumber < EXT2_IND_BLOCK){
 			
@@ -236,7 +237,6 @@ static int readfile(struct ext2_super_block* super_block, long int block_size, i
 			}
 		}
 		else if (startblocknumber < EXT2_IND_BLOCK + block_size/4){
-			
 			int mempage = 0;
 			if (pread(ext2img, (char*) &mempage, 4, block_size*inode.i_block[EXT2_IND_BLOCK] + (startblocknumber - EXT2_IND_BLOCK)*4) != 4)
 				return -errno;
@@ -260,11 +260,11 @@ static int readfile(struct ext2_super_block* super_block, long int block_size, i
 				return -errno;
 			}
 		}
+		buf += readportion;
 		lefttoread -= readportion;
 		startblocknumber++;
 		offinsideblock = 0;
 	}
-
 	return size;
 }
 
