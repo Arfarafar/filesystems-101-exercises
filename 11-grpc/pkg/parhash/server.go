@@ -104,7 +104,7 @@ func (s *Server) ParallelHash(ctx context.Context, req *parhashpb.ParHashReq) (r
 	    client = make([] hashpb.HashSvcClient, count)
 	    conn = make([] *grpc.ClientConn, count)
     )
-    for i := range count {
+    for i := range conn {
 	    conn[i], err = grpc.Dial(s.conf.BackendAddrs[i],
 		    grpc.WithInsecure(), /* allow non-TLS connections */
 	    )
