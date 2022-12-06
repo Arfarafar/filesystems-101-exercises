@@ -119,7 +119,7 @@ func (s *Server) ParallelHash(ctx context.Context, req *parhashpb.ParHashReq) (r
 	var (
 		wg     = workgroup.New(workgroup.Config{Sem: s.sem})
 		hashes = make([][] byte, len(req.Data))
-        lock   sync.Mutex
+        //lock   sync.Mutex
 	)
    
 	for i := range req.Data {
@@ -134,9 +134,9 @@ func (s *Server) ParallelHash(ctx context.Context, req *parhashpb.ParHashReq) (r
 				return err
 			}
 
-			lock.Lock()
+			s.lock.Lock()
 			hashes[i] = resp.Hash
-			lock.Unlock()
+			s.lock.Unlock()
 
 			return nil
 		})
