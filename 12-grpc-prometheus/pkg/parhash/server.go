@@ -5,6 +5,7 @@ import (
     "net"
 	"sync"
     "log"
+    "time"
 
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
@@ -173,7 +174,8 @@ func (s *Server) ParallelHash(ctx context.Context, req *parhashpb.ParHashReq) (r
 			lock.Lock()
 			hashes[ctx_i] = resp.Hash
 			lock.Unlock()
-            s.subquery_durations.With(prometheus.Labels{"backend": s.conf.BackendAddrs[handler]}).Observe(float64(elapsed.Milliseconds()))
+            obs, er := s.subquery_durations.GetMetricWith(prometheus.Labels{"backend": s.conf.BackendAddrs[handler]})
+            obs.Observe(float64(elapsed.Milliseconds()))
 			return nil
 		})
 	}
