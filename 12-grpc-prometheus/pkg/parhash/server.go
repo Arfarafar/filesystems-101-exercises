@@ -2,10 +2,18 @@ package parhash
 
 import (
 	"context"
+    "net"
+	"sync"
+    "log"
 
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	"golang.org/x/sync/semaphore"
+    "google.golang.org/grpc"
+
+	parhashpb "fs101ex/pkg/gen/parhashsvc"
+    hashpb "fs101ex/pkg/gen/hashsvc"
+	"fs101ex/pkg/workgroup"
 )
 
 type Config struct {
@@ -53,30 +61,126 @@ type Config struct {
 // Both performance counters must be placed to Prometheus namespace "parhash".
 type Server struct {
 	conf Config
-
 	sem *semaphore.Weighted
+    stop context.CancelFunc
+	l    net.Listener
+	wg   sync.WaitGroup
+    lock   sync.Mutex
+    RRn int
+    nr_nr_requests prometheus.Counter
+    subquery_durations *prometheus.HistogramVec
 }
 
 func New(conf Config) *Server {
 	return &Server{
 		conf: conf,
 		sem:  semaphore.NewWeighted(int64(conf.Concurrency)),
+        nr_nr_requests: prometheus.NewCounter(prometheus.CounterOpts{
+			Namespace: "parhash",
+			Name: "nr_nr_requests",
+		}),
+		subquery_durations: prometheus.NewHistogramVec(prometheus.HistogramOpts{
+			Namespace: "parhash",
+			Name: "subquery_durations",
+			Buckets: prometheus.ExponentialBuckets(0.1, 10000, 24),
+		}, []string{"backend"}),
+
 	}
 }
 
 func (s *Server) Start(ctx context.Context) (err error) {
 	defer func() { err = errors.Wrap(err, "Start()") }()
 
-	/* implement me */
+	ctx, s.stop = context.WithCancel(ctx)
 
+	s.l, err = net.Listen("tcp", s.conf.ListenAddr)
+	if err != nil {
+		return err
+	}
+    s.RRn = 0
+	srv := grpc.NewServer()
+	parhashpb.RegisterParallelHashSvcServer(srv, s)
+
+	s.wg.Add(2)
+	go func() {
+		defer s.wg.Done()
+
+		srv.Serve(s.l)
+	}()
+	go func() {
+		defer s.wg.Done()
+
+		<-ctx.Done()
+		s.l.Close()
+	}()
+
+    s.conf.Prom.MustRegister(s.nr_nr_requests)
+	s.conf.Prom.MustRegister(s.subquery_durations)
 	return nil
 }
 
 func (s *Server) ListenAddr() string {
-	/* implement me */
-	return ""
+	return s.l.Addr().String()
 }
 
 func (s *Server) Stop() {
-	/* implement me */
+	s.stop()
+	s.wg.Wait()
+}
+
+func (s *Server) ParallelHash(ctx context.Context, req *parhashpb.ParHashReq) (resp *parhashpb.ParHashResp, err error) {
+    
+    s.lock.Lock()
+    s.nr_nr_requests.Inc()
+    s.lock.Unlock()
+    count := len(s.conf.BackendAddrs)
+    var (
+	    client = make([] hashpb.HashSvcClient, count)
+	    conn = make([] *grpc.ClientConn, count)
+    )
+    for i := range conn {
+	    conn[i], err = grpc.Dial(s.conf.BackendAddrs[i],
+		    grpc.WithInsecure(), /* allow non-TLS connections */
+	    )
+	    if err != nil {
+		    log.Fatalf("failed to connect to %q: %v", s.conf.BackendAddrs[i], err)
+	    }
+	    defer conn[i].Close()
+
+	    client[i] = hashpb.NewHashSvcClient(conn[i])
+    }
+
+	var (
+		wg     = workgroup.New(workgroup.Config{Sem: s.sem})
+		hashes = make([][] byte, len(req.Data))
+        lock   sync.Mutex
+	)
+    
+	for i := range req.Data {
+        ctx_i := i
+		wg.Go(ctx, func(ctx context.Context) (error) {
+			s.lock.Lock()
+            handler := s.RRn
+			s.RRn = (s.RRn + 1) % count
+            s.lock.Unlock()
+            start := time.Now()
+			resp, err := client[handler].Hash(ctx, &hashpb.HashReq{Data: req.Data[ctx_i]})
+			end := time.Now()
+            elapsed := end.Sub(start)
+            if err != nil {
+				return err
+			}
+			lock.Lock()
+			hashes[ctx_i] = resp.Hash
+			lock.Unlock()
+            obs, er := s.subquery_durations.GetMetricWith(prometheus.Labels{"backend": s.conf.BackendAddrs[handler]})
+            obs.Observe(elapsed.Milliseconds())
+			return nil
+		})
+	}
+	if err := wg.Wait(); err != nil {
+		log.Fatalf("failed to hash files: %v", err)
+	}
+
+	return &parhashpb.ParHashResp{Hashes: hashes}, nil
 }
